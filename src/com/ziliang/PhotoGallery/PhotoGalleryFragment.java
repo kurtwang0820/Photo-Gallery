@@ -1,146 +1,164 @@
 package com.ziliang.PhotoGallery;
 
-import java.util.ArrayList;
 
+import java.util.ArrayList;
+import android.app.Activity;
 import android.app.Fragment;
-import android.graphics.Bitmap;
+import android.app.SearchManager;
+import android.app.SearchableInfo;
+import android.content.ComponentName;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-import android.util.LruCache;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.SearchView;
 
 public class PhotoGalleryFragment extends Fragment {
     GridView mGridView;
-    ArrayList<GalleryItem> mItems = new ArrayList<GalleryItem>();
-    private int current_page = 1;
-    private int fetched_page = 0;
-    private int scrollPosition=0;
-    private static final String TAG = "PhotoGalleryFragment";
-    ThumbnailDownloader<ImageView> mThumbnailThread;
-    private LruCache<String,Bitmap> memCache;
+    ArrayList<GalleryItem> mItems;
+    ThumbnailDownloader mThumbnailThread;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setRetainInstance(true);
-        new FetchItemsTask().execute(current_page);
-        mThumbnailThread=new ThumbnailDownloader<ImageView>(new Handler());
-        mThumbnailThread.setListener(new ThumbnailDownloader.Listener<ImageView>(){
-            public void onThumbnailDownloaded(ImageView imageView,String url,Bitmap thumbnail){
-                if(isVisible()){
-                    memCache.put(url,thumbnail);
-                    imageView.setImageBitmap(thumbnail);
-                }
-            }
-        });
+        setHasOptionsMenu(true);
+
+        updateItems();
+
+        mThumbnailThread = new ThumbnailDownloader(new Handler());
         mThumbnailThread.start();
-        mThumbnailThread.getLooper();
-        final int maxMemory=(int)(Runtime.getRuntime().maxMemory()/1024);
-        final int cacheSize=maxMemory/5;
-        memCache=new LruCache<String, Bitmap>(cacheSize);
-        Log.i(TAG,"Background thread started");
-    }
-    public void addBitmapToMemoryCache(String key, Bitmap bitmap) {
-        if (getBitmapFromMemCache(key) == null) {
-            memCache.put(key, bitmap);
-        }
     }
 
-    public Bitmap getBitmapFromMemCache(String key) {
-        if(key == null) return null;
-
-        return memCache.get(key);
+    public void updateItems() {
+        new FetchItemsTask().execute();
     }
+
     @Override
-    public View onCreateView(LayoutInflater inflater, final ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
 
-        mGridView = (GridView) v.findViewById(R.id.gridView);
-        mGridView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
+        mGridView = (GridView)v.findViewById(R.id.gridView);
 
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                if (firstVisibleItem + visibleItemCount == totalItemCount && totalItemCount > 0 && current_page == fetched_page) {
-                    current_page += 1;
-                    new FetchItemsTask().execute(current_page);
-                    scrollPosition=firstVisibleItem + visibleItemCount;
-                    Log.i(TAG, "Scrolled: current page: " + current_page + " - fetched page: " + fetched_page + " -total item count: " + totalItemCount);
-                }
-            }
-        });
         setupAdapter();
 
         return v;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mThumbnailThread.quit();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mThumbnailThread.clearQueue();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.fragment_photo_gallery_menu, menu);
+
+            // pull out the SearchView
+            MenuItem searchItem = menu.findItem(R.id.menu_item_search);
+            SearchView searchView = (SearchView)searchItem.getActionView();
+
+            // get the data from our searchable.xml as a SearchableInfo
+            SearchManager searchManager = (SearchManager)getActivity()
+                    .getSystemService(Context.SEARCH_SERVICE);
+            ComponentName name = getActivity().getComponentName();
+            SearchableInfo searchInfo = searchManager.getSearchableInfo(name);
+
+            searchView.setSearchableInfo(searchInfo);
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_search:
+                getActivity().onSearchRequested();
+                return true;
+            case R.id.menu_item_clear:
+                PreferenceManager.getDefaultSharedPreferences(getActivity())
+                        .edit()
+                        .putString(FlickrFetcher.PREF_SEARCH_QUERY, null)
+                        .commit();
+                updateItems();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     void setupAdapter() {
         if (getActivity() == null || mGridView == null) return;
 
         if (mItems != null) {
-            mGridView.setSelection(scrollPosition);
             mGridView.setAdapter(new GalleryItemAdapter(mItems));
         } else {
             mGridView.setAdapter(null);
         }
     }
 
-    private class FetchItemsTask extends AsyncTask<Integer, Void, ArrayList<GalleryItem>> {
+    private class FetchItemsTask extends AsyncTask<Void,Void,ArrayList<GalleryItem>> {
         @Override
-        protected ArrayList<GalleryItem> doInBackground(Integer... params) {
-            return new FlickrFetcher().fetchItems(params[0]);
+        protected ArrayList<GalleryItem> doInBackground(Void... params) {
+            Activity activity = getActivity();
+            if (activity == null)
+                return new ArrayList<GalleryItem>();
+
+            String query = PreferenceManager.getDefaultSharedPreferences(activity)
+                    .getString(FlickrFetcher.PREF_SEARCH_QUERY, null);
+            if (query != null) {
+                return new FlickrFetcher().search(query);
+            } else {
+                return new FlickrFetcher().fetchItems();
+            }
         }
 
         @Override
         protected void onPostExecute(ArrayList<GalleryItem> items) {
-            mItems.addAll(items);
+            mItems = items;
             setupAdapter();
-            fetched_page += 1;
         }
     }
-    private class GalleryItemAdapter extends ArrayAdapter<GalleryItem>{
-        public GalleryItemAdapter(ArrayList<GalleryItem> items){
-            super(getActivity(),0,items);
+
+    private class GalleryItemAdapter extends ArrayAdapter<GalleryItem> {
+        public GalleryItemAdapter(ArrayList<GalleryItem> items) {
+            super(getActivity(), 0, items);
         }
+
         @Override
-        public View getView(int position,View convertView,ViewGroup parent){
-            if(convertView==null){
-                convertView=getActivity().getLayoutInflater().inflate(R.layout.gallery_item,parent,false);
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = getActivity().getLayoutInflater()
+                        .inflate(R.layout.gallery_item, parent, false);
             }
-            ImageView imageView=(ImageView)convertView.findViewById(R.id.gallery_item_imageView);
+
+            GalleryItem item = getItem(position);
+            ImageView imageView = (ImageView)convertView
+                    .findViewById(R.id.gallery_item_imageView);
             imageView.setImageResource(R.drawable.brian_up_close);
-            GalleryItem item=getItem(position);
-            if(getBitmapFromMemCache(item.getmUrl())==null){
-                mThumbnailThread.queueThumbnail(imageView,item.getmUrl());
-            }else{
-                if(isVisible()){
-                    imageView.setImageBitmap(getBitmapFromMemCache(item.getmUrl()));
-                }
-            }
+            mThumbnailThread.queueThumbnail(imageView, item.getmUrl());
+
             return convertView;
         }
     }
-    @Override
-    public void onDestroy(){
-        super.onDestroy();
-        mThumbnailThread.quit();
-        Log.i(TAG,"Background thread destroyed");
-    }
-    @Override
-    public void onDestroyView(){
-        super.onDestroyView();
-        mThumbnailThread.clearQueue();
-    }
 }
+
