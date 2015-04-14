@@ -26,7 +26,7 @@ public class FlickrFetcher {
     private static final String EXTRA_SMALL_URL = "url_s";
     private static final String PARAM_TEXT="text";
     private static final String XML_PHOTO = "photo";
-
+    public static final String PREF_LAST_RESULT_ID="lastResultId";
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
@@ -104,11 +104,12 @@ public class FlickrFetcher {
                 String id = parser.getAttributeValue(null, "id");
                 String caption = parser.getAttributeValue(null, "title");
                 String smallUrl = parser.getAttributeValue(null, EXTRA_SMALL_URL);
-
+                String owner=parser.getAttributeValue(null,"owner");
                 GalleryItem item = new GalleryItem();
                 item.setmId(id);
                 item.setmCaption(caption);
                 item.setmUrl(smallUrl);
+                item.setmOwner(owner);
                 items.add(item);
             }
 

@@ -7,6 +7,7 @@ public class GalleryItem {
     private String mCaption;
     private String mId;
     private String mUrl;
+    private String mOwner;
     public String toString(){
         return mCaption;
     }
@@ -33,5 +34,16 @@ public class GalleryItem {
 
     public void setmUrl(String mUrl) {
         this.mUrl = mUrl;
+    }
+
+    public String getmOwner(){
+        return mOwner;
+    }
+
+    public void setmOwner(String owner){
+        mOwner=owner;
+    }
+    public String getPhotoPageUrl(){
+        return "http://www.flickr.com/photos/"+mOwner+"/"+mId;
     }
 }
