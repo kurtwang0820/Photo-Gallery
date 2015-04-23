@@ -4,7 +4,6 @@ package com.ziliang.PhotoGallery;
 import java.util.ArrayList;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
 import android.content.ComponentName;
@@ -27,14 +26,11 @@ public class PhotoGalleryFragment extends VisibleFragment {
     GridView mGridView;
     ArrayList<GalleryItem> mItems;
     ThumbnailDownloader mThumbnailThread;
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setRetainInstance(true);
         setHasOptionsMenu(true);
-
         updateItems();
 //        Intent i=new Intent(getActivity(),PollService.class);
 //        getActivity().startService(i);
@@ -42,11 +38,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
         mThumbnailThread = new ThumbnailDownloader(new Handler());
         mThumbnailThread.start();
     }
-
-    public void updateItems() {
-        new FetchItemsTask().execute();
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -67,19 +58,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
         });
         return v;
     }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        mThumbnailThread.quit();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        mThumbnailThread.clearQueue();
-    }
-
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
@@ -98,7 +76,16 @@ public class PhotoGalleryFragment extends VisibleFragment {
         searchView.setSearchableInfo(searchInfo);
 
     }
-
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+        if (PollService.isServiceAlarm(getActivity())) {
+            toggleItem.setTitle(R.string.stop_polling);
+        } else {
+            toggleItem.setTitle(R.string.start_polling);
+        }
+    }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -121,26 +108,19 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 return super.onOptionsItemSelected(item);
         }
     }
-
     @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        super.onPrepareOptionsMenu(menu);
-        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
-        if (PollService.isServiceAlarm(getActivity())) {
-            toggleItem.setTitle(R.string.stop_polling);
-        } else {
-            toggleItem.setTitle(R.string.start_polling);
-        }
+    public void onDestroy() {
+        super.onDestroy();
+        mThumbnailThread.quit();
+    }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mThumbnailThread.clearQueue();
     }
 
-    void setupAdapter() {
-        if (getActivity() == null || mGridView == null) return;
-
-        if (mItems != null) {
-            mGridView.setAdapter(new GalleryItemAdapter(mItems));
-        } else {
-            mGridView.setAdapter(null);
-        }
+    public void updateItems() {
+        new FetchItemsTask().execute();
     }
 
     private class FetchItemsTask extends AsyncTask<Void, Void, ArrayList<GalleryItem>> {
@@ -149,7 +129,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
             Activity activity = getActivity();
             if (activity == null)
                 return new ArrayList<GalleryItem>();
-
             String query = PreferenceManager.getDefaultSharedPreferences(activity)
                     .getString(FlickrFetcher.PREF_SEARCH_QUERY, null);
             if (query != null) {
@@ -158,32 +137,35 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 return new FlickrFetcher().fetchItems();
             }
         }
-
         @Override
         protected void onPostExecute(ArrayList<GalleryItem> items) {
             mItems = items;
             setupAdapter();
         }
     }
-
+    void setupAdapter() {
+        if (getActivity() == null || mGridView == null) return;
+        if (mItems != null) {
+            mGridView.setAdapter(new GalleryItemAdapter(mItems));
+        } else {
+            mGridView.setAdapter(null);
+        }
+    }
     private class GalleryItemAdapter extends ArrayAdapter<GalleryItem> {
         public GalleryItemAdapter(ArrayList<GalleryItem> items) {
             super(getActivity(), 0, items);
         }
-
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 convertView = getActivity().getLayoutInflater()
                         .inflate(R.layout.gallery_item, parent, false);
             }
-
             GalleryItem item = getItem(position);
             ImageView imageView = (ImageView) convertView
                     .findViewById(R.id.gallery_item_imageView);
-            imageView.setImageResource(R.drawable.brian_up_close);
+            imageView.setImageResource(R.drawable.loading);
             mThumbnailThread.queueThumbnail(imageView, item.getmUrl());
-
             return convertView;
         }
     }
