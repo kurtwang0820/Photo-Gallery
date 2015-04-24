@@ -7,7 +7,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class PhotoGalleryActivity extends SingleFragmentActivity {
-    private static final String TAG="PhotoGalleryActivity";
+//    private static final String TAG="PhotoGalleryActivity";
     @Override
     public Fragment createFragment() {
         return new PhotoGalleryFragment();

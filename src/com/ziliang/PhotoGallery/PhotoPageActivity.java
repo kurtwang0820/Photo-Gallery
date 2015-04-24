@@ -7,7 +7,7 @@ import android.app.Fragment;
  */
 public class PhotoPageActivity extends SingleFragmentActivity {
     @Override
-    public Fragment createFragment(){
+    public Fragment createFragment() {
         return new PhotoPageFragment();
     }
 }

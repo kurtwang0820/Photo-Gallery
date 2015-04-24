@@ -145,9 +145,9 @@ public class PhotoGalleryFragment extends VisibleFragment {
         protected void onPostExecute(ArrayList<GalleryItem> items) {
             mItems = items;
             setupAdapter();
-            String totalSearchHits=FlickrFetcher.getTotalSearchHits();
-            if(totalSearchHits!=null){
-                Toast.makeText(getActivity(), "Query returned "+totalSearchHits+" result(s)", Toast.LENGTH_SHORT).show();
+            String totalSearchHits = FlickrFetcher.getTotalSearchHits();
+            if (totalSearchHits != null) {
+                Toast.makeText(getActivity(), "Query returned " + totalSearchHits + " result(s)", Toast.LENGTH_SHORT).show();
             }
         }
     }

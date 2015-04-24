@@ -20,9 +20,11 @@ public class PollService extends IntentService {
     public static final String PREF_IS_ALARM_ON = "isAlarmOn";
     public static final String ACTION_SHOW_NOTIFICATION = "com.ziliang.photogallery.SHOW_NOTIFICATION";
     public static final String PERM_PRIVATE = "com.ziliang.PhotoGallery.PRIVATE";
+
     public PollService() {
         super(TAG);
     }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         //check background network connectivity
@@ -47,7 +49,7 @@ public class PollService extends IntentService {
         }
         String resultId = items.get(0).getmId();
         if (!resultId.equals(lastResultId)) {
-            Log.i(TAG, "Got a new result: " + resultId);
+//            Log.i(TAG, "Got a new result: " + resultId);
             Resources r = getResources();
             PendingIntent pi = PendingIntent.getActivity(this, 0, new Intent(this, PhotoGalleryActivity.class), 0);
             Notification notification = new Notification.Builder(this).setTicker(r.getString(R.string.new_picture_title)).
@@ -57,10 +59,10 @@ public class PollService extends IntentService {
                     setContentIntent(pi).setAutoCancel(true).build();
             showBackgroundNotification(0, notification);
         } else {
-            Log.i(TAG, "Got an old result: " + resultId);
+//            Log.i(TAG, "Got an old result: " + resultId);
         }
         prefs.edit().putString(FlickrFetcher.PREF_LAST_RESULT_ID, resultId).commit();
-        Log.i(TAG, "Received an intent: " + intent);
+//        Log.i(TAG, "Received an intent: " + intent);
     }
 
     public static void setServiceAlarm(Context context, boolean isOn) {

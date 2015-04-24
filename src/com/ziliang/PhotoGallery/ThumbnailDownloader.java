@@ -21,11 +21,13 @@ public class ThumbnailDownloader extends HandlerThread {
     Handler mResponseHandler;
     Map<ImageView, String> requestMap =
             Collections.synchronizedMap(new HashMap<ImageView, String>());
-    private LruCache<String, Bitmap> mMemoryCache=new LruCache<String, Bitmap>((int) (Runtime.getRuntime().maxMemory() / (5*1024)));
+    private LruCache<String, Bitmap> mMemoryCache = new LruCache<String, Bitmap>((int) (Runtime.getRuntime().maxMemory() / (5 * 1024)));
+
     public ThumbnailDownloader(Handler responseHandler) {
         super(TAG);
         mResponseHandler = responseHandler;
     }
+
     @Override
     protected void onLooperPrepared() {
         mHandler = new Handler() {
@@ -40,6 +42,7 @@ public class ThumbnailDownloader extends HandlerThread {
             }
         };
     }
+
     private void handleRequest(final ImageView imageView) {
         try {
             final String url = requestMap.get(imageView);
@@ -56,7 +59,7 @@ public class ThumbnailDownloader extends HandlerThread {
                         return;
 
                     requestMap.remove(imageView);
-                    mMemoryCache.put(url,bitmap);
+                    mMemoryCache.put(url, bitmap);
                     imageView.setImageBitmap(bitmap);
                 }
             });
@@ -64,8 +67,9 @@ public class ThumbnailDownloader extends HandlerThread {
             Log.e(TAG, "Error downloading image", ioe);
         }
     }
+
     public void queueThumbnail(ImageView imageView, String url) {
-        if(mMemoryCache.get(url)!=null){
+        if (mMemoryCache.get(url) != null) {
             imageView.setImageBitmap(mMemoryCache.get(url));
             return;
         }
@@ -74,6 +78,7 @@ public class ThumbnailDownloader extends HandlerThread {
                 .obtainMessage(MESSAGE_DOWNLOAD, imageView)
                 .sendToTarget();
     }
+
     public void clearQueue() {
         mHandler.removeMessages(MESSAGE_DOWNLOAD);
         requestMap.clear();
