@@ -17,7 +17,7 @@ public class PhotoGalleryActivity extends SingleFragmentActivity {
         PhotoGalleryFragment fragment=(PhotoGalleryFragment)getFragmentManager().findFragmentById(R.id.fragmentContainer);
         if(Intent.ACTION_SEARCH.equals(intent.getAction())){
             String query=intent.getStringExtra(SearchManager.QUERY);
-            Log.i(TAG, "Received a new search query: " + query);
+//            Log.i(TAG, "Received a new search query: " + query);
             PreferenceManager.getDefaultSharedPreferences(this).edit().putString(FlickrFetcher.PREF_SEARCH_QUERY,query).commit();
         }
         fragment.updateItems();

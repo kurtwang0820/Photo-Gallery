@@ -13,7 +13,7 @@ import android.widget.Toast;
 /**
  * Created by Kurt on 4/13/2015.
  */
-public class VisibleFragment extends Fragment {
+public abstract class VisibleFragment extends Fragment {
     public static final String TAG="VisibleFragment";
     private BroadcastReceiver mOnShowNotification=new BroadcastReceiver() {
         @Override
@@ -34,5 +34,4 @@ public class VisibleFragment extends Fragment {
         super.onPause();
         getActivity().unregisterReceiver(mOnShowNotification);
     }
-
 }

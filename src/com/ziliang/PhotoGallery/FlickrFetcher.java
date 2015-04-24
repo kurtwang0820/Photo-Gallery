@@ -28,7 +28,8 @@ public class FlickrFetcher {
     private static final String EXTRA_SMALL_URL = "url_s";
     private static final String PARAM_TEXT="text";
     private static final String XML_PHOTO = "photo";
-
+    private static final String TOTAL_PHOTO="photos";
+    private static String totalHit=null;
     //get data in form of bytes from flickr
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
@@ -100,6 +101,9 @@ public class FlickrFetcher {
     void parseItems(ArrayList<GalleryItem> items, XmlPullParser parser) throws XmlPullParserException, IOException {
         int eventType = parser.next();
         while (eventType != XmlPullParser.END_DOCUMENT) {
+            if (eventType == XmlPullParser.START_TAG && TOTAL_PHOTO.equals(parser.getName())) {
+                totalHit=parser.getAttributeValue(null,"total");
+            }
             if (eventType == XmlPullParser.START_TAG &&
                     XML_PHOTO.equals(parser.getName())) {
                 String id = parser.getAttributeValue(null, "id");
@@ -115,5 +119,10 @@ public class FlickrFetcher {
             }
             eventType = parser.next();
         }
+    }
+
+    //get total search hit
+    public static String getTotalSearchHits(){
+        return totalHit;
     }
 }

@@ -44,7 +44,6 @@
             <intent-filter android:priority="-999">
                 <action android:name="com.ziliang.PhotoGallery.SHOW_NOTIFICATION"/>
             </intent-filter>
-
         </receiver>
     </application>
 </manifest>

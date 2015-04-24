@@ -17,21 +17,22 @@ import java.util.ArrayList;
 public class PollService extends IntentService {
     private static final String TAG = "PollService";
     private static final int POLL_INTERVAL = 1000 * 60 * 5;
-    public static final String PREF_IS_ALARM_ON="isAlarmOn";
-    public static final String ACTION_SHOW_NOTIFICATION="com.ziliang.photogallery.SHOW_NOTIFICATION";
-    public static final String PERM_PRIVATE="com.ziliang.PhotoGallery.PRIVATE";
+    public static final String PREF_IS_ALARM_ON = "isAlarmOn";
+    public static final String ACTION_SHOW_NOTIFICATION = "com.ziliang.photogallery.SHOW_NOTIFICATION";
+    public static final String PERM_PRIVATE = "com.ziliang.PhotoGallery.PRIVATE";
     public PollService() {
         super(TAG);
     }
-
     @Override
     protected void onHandleIntent(Intent intent) {
+        //check background network connectivity
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressWarnings("deprecation")
         boolean isNetworkAvailable = cm.getBackgroundDataSetting() && cm.getActiveNetworkInfo() != null;
         if (!isNetworkAvailable) {
             return;
         }
+        //use shared preference to store recent
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((this));
         String query = prefs.getString(FlickrFetcher.PREF_SEARCH_QUERY, null);
         String lastResultId = prefs.getString(FlickrFetcher.PREF_LAST_RESULT_ID, null);
@@ -49,11 +50,12 @@ public class PollService extends IntentService {
             Log.i(TAG, "Got a new result: " + resultId);
             Resources r = getResources();
             PendingIntent pi = PendingIntent.getActivity(this, 0, new Intent(this, PhotoGalleryActivity.class), 0);
-            Notification notification = new Notification.Builder(this).setTicker(r.getString(R.string.new_picture_title)).setSmallIcon(android.R.drawable.ic_menu_report_image).setContentTitle(r.getString(R.string.new_picture_title)).setContentText(r.getString(R.string.new_picture_text)).setContentIntent(pi).setAutoCancel(true).build();
-//            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-//            notificationManager.notify(0, notification);
-//            sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION),PERM_PRIVATE);
-            showBackgroundNotification(0,notification);
+            Notification notification = new Notification.Builder(this).setTicker(r.getString(R.string.new_picture_title)).
+                    setSmallIcon(android.R.drawable.ic_menu_report_image).
+                    setContentTitle(r.getString(R.string.new_picture_title)).
+                    setContentText(r.getString(R.string.new_picture_text)).
+                    setContentIntent(pi).setAutoCancel(true).build();
+            showBackgroundNotification(0, notification);
         } else {
             Log.i(TAG, "Got an old result: " + resultId);
         }
@@ -71,7 +73,7 @@ public class PollService extends IntentService {
             alarmManager.cancel(pi);
             pi.cancel();
         }
-        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PollService.PREF_IS_ALARM_ON,isOn).commit();
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PollService.PREF_IS_ALARM_ON, isOn).commit();
     }
 
     public static boolean isServiceAlarm(Context context) {
@@ -80,10 +82,10 @@ public class PollService extends IntentService {
         return pi != null;
     }
 
-    void showBackgroundNotification(int requestCode,Notification notification){
-        Intent i=new Intent(ACTION_SHOW_NOTIFICATION);
-        i.putExtra("REQUEST_CODE",requestCode);
-        i.putExtra("NOTIFICATION",notification);
-        sendOrderedBroadcast(i,PERM_PRIVATE,null,null,Activity.RESULT_OK,null,null);
+    void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent i = new Intent(ACTION_SHOW_NOTIFICATION);
+        i.putExtra("REQUEST_CODE", requestCode);
+        i.putExtra("NOTIFICATION", notification);
+        sendOrderedBroadcast(i, PERM_PRIVATE, null, null, Activity.RESULT_OK, null, null);
     }
 }

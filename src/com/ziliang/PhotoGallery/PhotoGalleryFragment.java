@@ -26,6 +26,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
     GridView mGridView;
     ArrayList<GalleryItem> mItems;
     ThumbnailDownloader mThumbnailThread;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,6 +39,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
         mThumbnailThread = new ThumbnailDownloader(new Handler());
         mThumbnailThread.start();
     }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -49,33 +51,31 @@ public class PhotoGalleryFragment extends VisibleFragment {
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                GalleryItem item=mItems.get(position);
-                Uri photoPageUri= Uri.parse(item.getPhotoPageUrl());
-                Intent i=new Intent(getActivity(),PhotoPageActivity.class);
+                GalleryItem item = mItems.get(position);
+                Uri photoPageUri = Uri.parse(item.getPhotoPageUrl());
+                Intent i = new Intent(getActivity(), PhotoPageActivity.class);
                 i.setData(photoPageUri);
                 startActivity(i);
             }
         });
         return v;
     }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.fragment_photo_gallery_menu, menu);
-
         // pull out the SearchView
         MenuItem searchItem = menu.findItem(R.id.menu_item_search);
         SearchView searchView = (SearchView) searchItem.getActionView();
-
         // get the data from our searchable.xml as a SearchableInfo
         SearchManager searchManager = (SearchManager) getActivity()
                 .getSystemService(Context.SEARCH_SERVICE);
         ComponentName name = getActivity().getComponentName();
         SearchableInfo searchInfo = searchManager.getSearchableInfo(name);
-
         searchView.setSearchableInfo(searchInfo);
-
     }
+
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
@@ -86,6 +86,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
             toggleItem.setTitle(R.string.start_polling);
         }
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -108,11 +109,13 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 return super.onOptionsItemSelected(item);
         }
     }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
         mThumbnailThread.quit();
     }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -137,12 +140,18 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 return new FlickrFetcher().fetchItems();
             }
         }
+
         @Override
         protected void onPostExecute(ArrayList<GalleryItem> items) {
             mItems = items;
             setupAdapter();
+            String totalSearchHits=FlickrFetcher.getTotalSearchHits();
+            if(totalSearchHits!=null){
+                Toast.makeText(getActivity(), "Query returned "+totalSearchHits+" result(s)", Toast.LENGTH_SHORT).show();
+            }
         }
     }
+
     void setupAdapter() {
         if (getActivity() == null || mGridView == null) return;
         if (mItems != null) {
@@ -151,10 +160,12 @@ public class PhotoGalleryFragment extends VisibleFragment {
             mGridView.setAdapter(null);
         }
     }
+
     private class GalleryItemAdapter extends ArrayAdapter<GalleryItem> {
         public GalleryItemAdapter(ArrayList<GalleryItem> items) {
             super(getActivity(), 0, items);
         }
+
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
